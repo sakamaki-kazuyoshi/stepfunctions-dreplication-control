@@ -2,7 +2,6 @@
   "StartAt": "get execution id",
   "States": {
     "get execution id": {
-      "Comment": "現在の実行ID、ステートマシンARNを取得して後続ステートに渡す",
       "Type": "Pass",
       "Parameters": {
         "StateMachineId.$" : "$$.StateMachine.Id",
@@ -11,26 +10,22 @@
       "Next": "check running statemachine"
     },
     "check running statemachine": {
-      "Comment": "現在の実行以外の実行有無を確認",
       "Type": "Task",
       "Resource": "${LambdaFunction}",
       "Next": "choice"
     },
     "choice": {
       "Type": "Choice",
-      "Comment": "現在の実行以外の実行有無で処理を分岐",
       "Choices": [
         {
-          "Comment": "実行がある場合",
           "Variable": "$.running_flg",
           "BooleanEquals": true,
           "Next": "fail"
         }
       ],
-      "Default": "wait"
+      "Default": "processing"
     },
-    "wait": {
-      "Comment": "本来の実施した処理に置き換える",
+    "processing": {
       "Type": "Wait",
       "Seconds": 300,
       "Next": "succeed"

@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  StateMachineName:
+    Description: Please type the Step Functions StateMachine Name.
+    Type: String
+    Default: 'duplication_control_sfn'
+  LambdaFunctionName:
+    Description: Please type the Lambda Function Name.
+    Type: String
+    Default: 'check_running_statemachine'
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${LambdaFunctionName}
+      CodeUri: functions/check_running_statemachine/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Timeout: 60
+      Role: !GetAtt LambdaFunctionRole.Arn
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSStepFunctionsReadOnlyAccess
+  StateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub ${StateMachineName}
+      DefinitionSubstitutions:
+        LambdaFunction: !GetAtt LambdaFunction.Arn
+      DefinitionUri: statemachine/duplication_control.asl.json
+      Role: !GetAtt StateMachineRole.Arn
+      Logging:
+        Level: ALL
+        IncludeExecutionData: True
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt StateMachineLogGroup.Arn
+  StateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName : !Join [ "", [ '/aws/states/', !Sub '${StateMachineName}', '-Logs' ] ]
+  StateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+

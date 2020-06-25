@@ -1,2 +1,2 @@
 # stepfunctions-dreplication-control
-Step Functions suppress duplicate execution.
+Step Functions AWS SAM template that suppresses duplicate execution.
